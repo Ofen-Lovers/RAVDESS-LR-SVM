@@ -1,0 +1,85 @@
+Saved raw extracted features to: output\20250922_151013_01_raw_features_and_labels.csv
+STEP 2: Preprocessing data
+Preprocessing data...
+Saved cleaned features to: output\20250922_151014_02_features_cleaned.csv
+Saved label encoding map to: output\20250922_151014_02_label_mapping.csv
+Data split: 2304 training samples, 576 testing samples.
+STEP 3: Training and evaluating models
+
+=== Training and Evaluating SVM ===
+Fitting 5 folds for each of 12 candidates, totalling 60 fits
+Best parameters for SVM: {'C': 10, 'gamma': 'scale', 'kernel': 'rbf', 'probability': True, 'random_state': 42}
+Test Accuracy for SVM: 0.9375
+Saved SVM CV results to: output\20250922_151158_03_svm_cv_results.csv
+Saved SVM metrics to: output\20250922_151158_03_svm_metrics.csv
+Saved plot to: output\20250922_151200_03_svm_confusion_matrix.png
+Saved SVM report to: output\20250922_151200_03_svm_classification_report.csv
+
+Classification Report:
+              precision    recall  f1-score   support
+
+       angry       0.97      0.97      0.97        76
+        calm       0.95      0.97      0.96        77
+     disgust       0.95      0.90      0.92        77
+     fearful       0.97      0.91      0.94        77
+       happy       0.88      0.96      0.92        77
+     neutral       0.95      0.97      0.96        38
+         sad       0.91      0.90      0.90        77
+   surprised       0.94      0.94      0.94        77
+
+    accuracy                           0.94       576
+   macro avg       0.94      0.94      0.94       576
+weighted avg       0.94      0.94      0.94       576
+
+Saved object to: output\20250922_151200_03_svm_model.pkl
+
+=== Training and Evaluating Logistic Regression ===
+Fitting 5 folds for each of 8 candidates, totalling 40 fits
+Best parameters for Logistic Regression: {'C': 10, 'max_iter': 1000, 'random_state': 42, 'solver': 'lbfgs'}
+Test Accuracy for Logistic Regression: 0.5556
+Saved Logistic Regression CV results to: output\20250922_151202_03_logistic_regression_cv_results.csv
+Saved Logistic Regression metrics to: output\20250922_151202_03_logistic_regression_metrics.csv
+Saved plot to: output\20250922_151202_03_logistic_regression_confusion_matrix.png
+Saved Logistic Regression report to: output\20250922_151202_03_logistic_regression_classification_report.csv
+
+Classification Report:
+              precision    recall  f1-score   support
+
+       angry       0.67      0.76      0.72        76
+        calm       0.64      0.62      0.63        77
+     disgust       0.51      0.49      0.50        77
+     fearful       0.62      0.66      0.64        77
+       happy       0.58      0.51      0.54        77
+     neutral       0.36      0.32      0.34        38
+         sad       0.46      0.51      0.48        77
+   surprised       0.47      0.45      0.46        77
+
+    accuracy                           0.56       576
+   macro avg       0.54      0.54      0.54       576
+weighted avg       0.55      0.56      0.55       576
+
+Saved object to: output\20250922_151202_03_logistic_regression_model.pkl
+STEP 4: Analyzing feature importance and comparing models
+
+Analyzing feature importance for SVM...
+Using permutation importance (this may take a moment)...
+Saved SVM feature importance to: output\20250922_151227_04_svm_feature_importance.csv
+Saved plot to: output\20250922_151227_04_svm_feature_importance.png
+
+Analyzing feature importance for Logistic Regression...
+Using permutation importance (this may take a moment)...
+Saved Logistic Regression feature importance to: output\20250922_151227_04_logistic_regression_feature_importance.csv
+Saved plot to: output\20250922_151228_04_logistic_regression_feature_importance.png
+
+=== Model Performance Comparison ===
+                     accuracy  precision    recall        f1
+SVM                  0.937500   0.938430  0.937500  0.937466
+Logistic Regression  0.555556   0.552513  0.555556  0.552953
+Saved Model comparison to: output\20250922_151228_04_model_comparison.csv
+STEP 5: Finalizing and saving best model
+
+Best performing model is: SVM with accuracy 0.9375
+Saved object to: output\20250922_151228_05_emotion_predictor.pkl
+PIPELINE COMPLETED SUCCESSFULLY!
+To use the final model, load '05_emotion_predictor.pkl' and call its .predict() method with a .wav file path.
+All output files are saved in: output
