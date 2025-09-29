@@ -1,0 +1,38 @@
+\Astiris\Desktop\RAVDESS-LR-SVM> & C:/Users/Astiris/AppData/Local/Programs/Python/Python313/python.exe c:/Users/Astiris/Desktop/RAVDESS-LR-SVM/SVM2.py
+Loading features from 'ravdess_full_features.csv'       
+Cleaned 'tempo_bpm' column.
+
+Training Linear SVM...
+Linear SVM training complete.
+
+Training RBF SVM...
+RBF SVM training complete.
+
+--- Comparative Evaluation Table ---
+            Accuracy  Precision    Recall  F1-score 
+Linear SVM  0.506944   0.532480  0.506944  0.515354 
+RBF SVM     0.458333   0.479069  0.458333  0.457665 
+
+Displaying Confusion Matrix for the RBF SVM model...
+
+--- Detailed Classification Report (RBF SVM) ---
+              precision    recall  f1-score   support   
+
+           1       0.12      0.11      0.11        19   
+           2       0.52      0.74      0.61        38   
+           3       0.39      0.32      0.35        38   
+           4       0.24      0.32      0.27        38   
+           5       0.87      0.51      0.65        39   
+           6       0.41      0.33      0.37        39   
+           7       0.56      0.53      0.54        38   
+           8       0.54      0.64      0.59        39   
+
+    accuracy                           0.46       288   
+   macro avg       0.46      0.44      0.44       288   
+weighted avg       0.48      0.46      0.46       288   
+
+
+--- Short Analysis ---
+Usually in RAVDESS, emotions like 'calm' and 'neutral' are harder to classify,
+as well as 'fear' and 'surprise' due to similar acoustic patterns.
+PS C:\Users\Astiris\Desktop\RAVDESS-LR-SVM> 
