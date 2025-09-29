@@ -2,7 +2,6 @@
 
 # %% Imports
 import os
-from pydub import AudioSegment
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -10,39 +9,16 @@ import librosa
 import librosa.feature
 import ast
 
-# %% Audio Preprocessing: Resample to 16kHz
-input_root  = "dataset"          # your original RAVDESS folder
-output_root = "dataset_16k"      # where 16k files will be saved
-
-if not os.path.exists(output_root) or not os.listdir(output_root):
-    print(f"'{output_root}' is empty or does not exist. Starting conversion.")
-    os.makedirs(output_root, exist_ok=True)
-
-    for root, _, files in os.walk(input_root):
-        rel_path = os.path.relpath(root, input_root)
-        out_dir  = os.path.join(output_root, rel_path)
-        os.makedirs(out_dir, exist_ok=True)
-        
-        for f in tqdm(files, desc=f"Processing {root}"):
-            if not f.lower().endswith(".wav"):
-                continue
-
-            in_path  = os.path.join(root, f)
-            out_path = os.path.join(out_dir, f)
-
-            audio = AudioSegment.from_file(in_path)
-            audio = audio.set_frame_rate(16000).set_channels(1)
-            audio.export(out_path, format="wav")
-
-    print("Conversion complete!")
-else:
-    print(f"'{output_root}' already exists and is not empty — skipping conversion.")
-
 # %% Feature Extraction
+# NOTE: This script assumes audio files have been pre-converted to 16kHz.
+dataset_path = "archive-16khz-v2"  # Path to your 16kHz audio files
 csv_path = "ravdess_features.csv"
 
+if not os.path.exists(dataset_path):
+    raise FileNotFoundError(f"The directory '{dataset_path}' was not found. Please ensure your 16kHz audio files are in this folder.")
+
 if os.path.exists(csv_path):
-    print(f"{csv_path} already exists. Loading features.")
+    print(f"'{csv_path}' already exists. Loading features.")
     df = pd.read_csv(csv_path)
 else:
     print("Extracting features: Pitch, RMS, ZCR, Tempo, Duration, Delta MFCC")
@@ -68,8 +44,8 @@ else:
         }
 
     all_feats = []
-    for root, _, files in os.walk(output_root):
-        for f in files:
+    for root, _, files in os.walk(dataset_path):
+        for f in tqdm(files, desc=f"Processing files in {root}"):
             if f.lower().endswith(".wav"):
                 file_path = os.path.join(root, f)
                 feats = extract_features(file_path)
@@ -106,7 +82,7 @@ def clean_tempo(val):
 df['tempo_bpm'] = df['tempo_bpm'].apply(clean_tempo)
 df['tempo_bpm'] = pd.to_numeric(df['tempo_bpm'], errors='coerce').fillna(0)
 print("Cleaned 'tempo_bpm' column data type:", df['tempo_bpm'].dtype)
-print(df['tempo_bpm'].head(10))
+
 
 # %% Train-Test Split
 from sklearn.model_selection import train_test_split
@@ -145,7 +121,8 @@ import matplotlib.pyplot as plt
 
 y_pred = svm_clf.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
-print("Accuracy:", acc)
+print("\n--- Model Evaluation ---")
+print(f"Accuracy: {acc:.4f}")
 print(classification_report(y_test, y_pred, zero_division=0))
 
 cm = confusion_matrix(y_test, y_pred, labels=svm_clf.classes_)
@@ -161,8 +138,6 @@ plt.show()
 
 # %% SHAP Feature Importance (Optional and Slow)
 # NOTE: The SHAP analysis can be very slow.
-# It was interrupted in the original notebook.
-# You may want to comment this section out if it takes too long.
 try:
     import shap
     print("\nStarting SHAP analysis (this may take a while)...")

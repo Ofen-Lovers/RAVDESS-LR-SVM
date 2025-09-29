@@ -1,0 +1,25 @@
+\Astiris\Desktop\RAVDESS-LR-SVM> & C:/Users/Astiris/AppData/Local/Programs/Python/Python313/python.exe c:/Users/Astiris/Desktop/RAVDESS-LR-SVM/SVM.py
+'ravdess_features.csv' already exists. Loading features.
+Cleaned 'tempo_bpm' column data type: float64
+SVM model trained.
+
+--- Model Evaluation ---
+Accuracy: 0.3681
+              precision    recall  f1-score   support
+
+       angry       0.55      0.58      0.56        38
+        calm       0.31      0.39      0.34        38
+     disgust       0.46      0.45      0.45        38
+     fearful       0.44      0.36      0.39        39
+       happy       0.32      0.21      0.25        39
+     neutral       0.19      0.21      0.20        19
+         sad       0.15      0.16      0.16        38
+   surprised       0.44      0.51      0.48        39
+
+    accuracy                           0.37       288
+   macro avg       0.36      0.36      0.35       288
+weighted avg       0.37      0.37      0.37       288
+
+
+Starting SHAP analysis (this may take a while)...
+PS C:\Users\Astiris\Desktop\RAVDESS-LR-SVM> 
