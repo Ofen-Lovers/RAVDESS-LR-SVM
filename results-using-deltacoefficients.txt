@@ -1,0 +1,98 @@
+PS C:\Users\Astiris\Desktop\RAVDESS-LR-SVM> & C:/Users/Astiris/AppData/Local/Programs/Python/Python313/python.exe c:/Users/Astiris/Desktop/RAVDESS-LR-SVM/Model/main.py
+Output will be saved to: output-using-deltacoefficients
+Data directory: archive
+STEP 1: Loading data and extracting features
+Finding all .wav files...
+Extracting features from 2880 files using parallel processing...
+100%|███████████████████████████████| 2880/2880 [1:29:54<00:00,  1.87s/it]
+Saved raw extracted features to: output-using-deltacoefficients\20250929_233909_01_raw_features_and_labels.csv
+
+STEP 2: Preprocessing data
+Preprocessing data...
+Saved label encoding map to: output-using-deltacoefficients\20250929_233910_02_label_mapping.csv
+Data split: 2304 training samples, 576 testing samples.
+
+STEP 3: Training and evaluating models
+
+--- Training SVM Model ---
+
+=== Training and Evaluating SVM ===
+Fitting 5 folds for each of 12 candidates, totalling 60 fits
+Best parameters for SVM: {'C': 10, 'gamma': 'scale', 'kernel': 'rbf', 'probability': True, 'random_state': 42}
+Test Accuracy for SVM: 0.9375
+Saved SVM CV results to: output-using-deltacoefficients\20250929_234047_03_svm_cv_results.csv
+Saved SVM metrics to: output-using-deltacoefficients\20250929_234047_03_svm_metrics.csv
+Saved plot to: output-using-deltacoefficients\20250929_234047_03_svm_confusion_matrix.png
+Saved SVM report to: output-using-deltacoefficients\20250929_234048_03_svm_classification_report.csv
+
+Classification Report:
+              precision    recall  f1-score   support
+
+       angry       0.93      1.00      0.96        76
+        calm       0.91      1.00      0.95        77
+     disgust       1.00      0.87      0.93        77
+     fearful       0.94      0.87      0.91        77
+       happy       0.92      0.95      0.94        77
+     neutral       1.00      1.00      1.00        38
+         sad       0.90      0.90      0.90        77
+   surprised       0.95      0.95      0.95        77
+
+    accuracy                           0.94       576
+   macro avg       0.94      0.94      0.94       576
+weighted avg       0.94      0.94      0.94       576
+
+Saved object to: output-using-deltacoefficients\20250929_234048_03_svm_model.pkl
+
+--- Training Logistic Regression Model ---
+
+=== Training and Evaluating Logistic Regression ===
+Fitting 5 folds for each of 8 candidates, totalling 40 fits
+Best parameters for Logistic Regression: {'C': 1, 'max_iter': 1000, 'random_state': 42, 'solver': 'lbfgs'}
+Test Accuracy for Logistic Regression: 0.7066
+Saved Logistic Regression CV results to: output-using-deltacoefficients\20250929_234055_03_logistic_regression_cv_results.csv
+Saved Logistic Regression metrics to: output-using-deltacoefficients\20250929_234055_03_logistic_regression_metrics.csv
+Saved plot to: output-using-deltacoefficients\20250929_234055_03_logistic_regression_confusion_matrix.png
+Saved Logistic Regression report to: output-using-deltacoefficients\20250929_234056_03_logistic_regression_classification_report.csv
+
+Classification Report:
+              precision    recall  f1-score   support
+
+       angry       0.79      0.84      0.82        76
+        calm       0.70      0.74      0.72        77
+     disgust       0.78      0.68      0.72        77
+     fearful       0.78      0.68      0.72        77
+       happy       0.74      0.77      0.75        77
+     neutral       0.68      0.71      0.69        38
+         sad       0.54      0.58      0.56        77
+   surprised       0.67      0.66      0.67        77
+
+    accuracy                           0.71       576
+   macro avg       0.71      0.71      0.71       576
+weighted avg       0.71      0.71      0.71       576
+
+Saved object to: output-using-deltacoefficients\20250929_234056_03_logistic_regression_model.pkl
+
+STEP 4: Analyzing feature importance and comparing models
+
+Analyzing feature importance for SVM...
+Using permutation importance (model-agnostic method)...
+Saved SVM feature importance to: output-using-deltacoefficients\20250929_234207_04_svm_feature_importance.csv
+Saved plot to: output-using-deltacoefficients\20250929_234207_04_svm_feature_importance.png
+
+Analyzing feature importance for Logistic Regression...
+Using permutation importance (model-agnostic method)...
+Saved Logistic Regression feature importance to: output-using-deltacoefficients\20250929_234207_04_logistic_regression_feature_importance.csv
+Saved plot to: output-using-deltacoefficients\20250929_234207_04_logistic_regression_feature_importance.png
+
+=== Model Performance Comparison ===
+                     accuracy  precision    recall        f1
+SVM                  0.937500   0.939246  0.937500  0.937057
+Logistic Regression  0.706597   0.710270  0.706597  0.707115
+Saved Model comparison to: output-using-deltacoefficients\20250929_234207_04_model_comparison.csv
+
+STEP 5: Finalizing and saving best model
+
+Best performing model is: SVM with accuracy 0.9375
+Saved object to: output-using-deltacoefficients\20250929_234207_05_emotion_predictor.pkl
+
+PIPELINE COMPLETED SUCCESSFULLY!
