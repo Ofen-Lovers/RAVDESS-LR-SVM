@@ -1,5 +1,3 @@
-# main.py
-
 import os
 import warnings
 from datetime import datetime
@@ -12,7 +10,7 @@ import matplotlib.pyplot as plt
 from feature_extraction import load_and_extract
 from preprocessing import preprocess_data
 from svm_model_training import train_svm
-from logistic_regression_model_training import train_logistic_regression
+from lr_model_training import train_logistic_regression
 from evaluation import analyze_feature_importance
 
 # --- Configuration ---
@@ -22,8 +20,8 @@ np.random.seed(RANDOM_STATE)
 N_MFCC = 13  # Number of MFCCs to extract
 
 # --- File Path Configuration ---
-DATA_DIR = "archive"  # Use a relative path
-OUTPUT_DIR = "output"
+DATA_DIR = "archive-16khz"  # Use a relative path
+OUTPUT_DIR = "Model-V2-output"
 
 # --- Utility Functions ---
 def save_artifact(data, filename, output_dir, description=""):
