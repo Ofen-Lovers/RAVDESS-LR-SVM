@@ -1,0 +1,96 @@
+PS C:\Users\Astiris\Desktop\RAVDESS-LR-SVM> & C:/Users/Astiris/AppData/Local/Programs/Python/Python313/python.exe c:/Users/Astiris/Desktop/RAVDESS-LR-SVM/Model-V2/main.py
+Output will be saved to: Model-V2-output-Improved
+Data directory: archive-16khz-v2
+STEP 1: Loading data and extracting features
+Finding all .wav files...
+Extracting features from 1440 files sequentially...
+100%|███████████████████| 1440/1440 [32:47<00:00,  1.37s/it]
+Saved raw extracted features to: Model-V2-output-Improved\20250930_183242_01_raw_features_and_labels.csv
+
+STEP 2: Preprocessing data
+Saved label encoding map to: Model-V2-output-Improved\20250930_183242_02_label_mapping.csv
+Data split: 1152 training samples, 288 testing samples.      
+
+STEP 3: Training and evaluating models
+
+--- Training SVM Model ---
+
+=== Training and Evaluating SVM ===
+Fitting 5 folds for each of 160 candidates, totalling 800 fits
+Best parameters for SVM: {'model__C': 1, 'model__gamma': 'scale', 'model__kernel': 'rbf', 'model__probability': True, 'model__random_state': 42, 'selector__k': 80}
+Test Accuracy for SVM: 0.7118
+Saved SVM CV results to: Model-V2-output-Improved\20250930_184556_03_svm_cv_results.csv
+Saved SVM metrics to: Model-V2-output-Improved\20250930_184556_03_svm_metrics.csv
+Saved plot to: Model-V2-output-Improved\20250930_184557_03_svm_confusion_matrix.png
+Saved SVM report to: Model-V2-output-Improved\20250930_184557_03_svm_classification_report.csv
+
+Classification Report:
+              precision    recall  f1-score   support
+
+       angry       0.88      0.74      0.80        38
+        calm       0.64      0.92      0.75        38
+     disgust       0.67      0.68      0.68        38
+     fearful       0.82      0.72      0.77        39
+       happy       0.66      0.74      0.70        39
+     neutral       0.80      0.42      0.55        19
+         sad       0.62      0.47      0.54        38
+   surprised       0.73      0.85      0.79        39
+
+    accuracy                           0.71       288
+   macro avg       0.73      0.69      0.70       288        
+weighted avg       0.72      0.71      0.71       288        
+
+Saved object to: Model-V2-output-Improved\20250930_184557_03_svm_model.pkl
+
+--- Training Logistic Regression Model ---
+
+=== Training and Evaluating Logistic Regression ===
+Fitting 5 folds for each of 160 candidates, totalling 800 fits
+Best parameters for Logistic Regression: {'model__C': 0.1, 'model__max_iter': 1000, 'model__penalty': 'l2', 'model__random_state': 42, 'model__solver': 'liblinear', 'selector__k': 80}Test Accuracy for Logistic Regression: 0.6701
+Saved Logistic Regression CV results to: Model-V2-output-Improved\20250930_191302_03_logistic_regression_cv_results.csv   
+Saved Logistic Regression metrics to: Model-V2-output-Improved\20250930_191302_03_logistic_regression_metrics.csv
+Saved plot to: Model-V2-output-Improved\20250930_191302_03_logistic_regression_confusion_matrix.png
+Saved Logistic Regression report to: Model-V2-output-Improved\20250930_191302_03_logistic_regression_classification_report.csv
+
+Classification Report:
+              precision    recall  f1-score   support        
+
+       angry       0.82      0.82      0.82        38        
+        calm       0.62      0.79      0.70        38        
+     disgust       0.69      0.76      0.72        38        
+     fearful       0.64      0.64      0.64        39        
+       happy       0.64      0.59      0.61        39        
+     neutral       0.67      0.32      0.43        19        
+         sad       0.57      0.42      0.48        38        
+   surprised       0.69      0.85      0.76        39        
+
+    accuracy                           0.67       288        
+   macro avg       0.67      0.65      0.65       288        
+weighted avg       0.67      0.67      0.66       288        
+
+Saved object to: Model-V2-output-Improved\20250930_191302_03_logistic_regression_model.pkl
+
+STEP 4: Analyzing feature importance and comparing models    
+
+Analyzing feature importance for SVM...
+Using permutation importance (model-agnostic method)...      
+Saved SVM feature importance to: Model-V2-output-Improved\20250930_191337_04_svm_feature_importance.csv
+Saved plot to: Model-V2-output-Improved\20250930_191337_04_svm_feature_importance.png
+
+Analyzing feature importance for Logistic Regression...      
+Using permutation importance (model-agnostic method)...      
+Saved Logistic Regression feature importance to: Model-V2-output-Improved\20250930_191339_04_logistic_regression_feature_importance.csv
+Saved plot to: Model-V2-output-Improved\20250930_191339_04_logistic_regression_feature_importance.png
+
+=== Model Performance Comparison ===
+                     accuracy  precision    recall        f1
+SVM                  0.711806   0.722130  0.711806  0.706177 
+Logistic Regression  0.670139   0.667008  0.670139  0.660191 
+Saved Model comparison to: Model-V2-output-Improved\20250930_191339_04_model_comparison.csv
+
+STEP 5: Finalizing and saving best model
+
+Best performing model is: SVM with accuracy 0.7118
+Saved object to: Model-V2-output-Improved\20250930_191339_05_emotion_predictor.pkl
+
+PIPELINE COMPLETED SUCCESSFULLY!

@@ -6,19 +6,23 @@ from tqdm import tqdm
 
 def extract_features(file_path, n_mfcc=13):
     """
-    Extracts a comprehensive set of acoustic features from a single audio file.
-    Includes tempo with safe error handling.
+    Extracts an enhanced set of acoustic features from a single audio file.
     """
     try:
-        y, sr = librosa.load(file_path, sr=None)
+        y, sr = librosa.load(file_path, sr=None) # Load at native sample rate
         
         # Pitch
         f0, _, _ = librosa.pyin(y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
         
-        # MFCCs and their derivatives (Deltas)
+        # MFCCs and their derivatives
         mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
         delta_mfccs = librosa.feature.delta(mfccs)
         delta2_mfccs = librosa.feature.delta(mfccs, order=2)
+        
+        # --- NEW FEATURES ---
+        spectral_contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
+        tonnetz = librosa.feature.tonnetz(y=y, sr=sr)
+        # --------------------
         
         tempo = estimate_tempo_simple(y, sr)
 
@@ -32,6 +36,13 @@ def extract_features(file_path, n_mfcc=13):
             'spectral_rolloff_mean': np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr)),
             'chroma_mean': np.mean(librosa.feature.chroma_stft(y=y, sr=sr)),
         }
+        
+        # --- ADD MEANS AND STDS FOR NEW FEATURES ---
+        features.update({f'spectral_contrast_{i+1}_mean': np.mean(spectral_contrast[i]) for i in range(spectral_contrast.shape[0])})
+        features.update({f'spectral_contrast_{i+1}_std': np.std(spectral_contrast[i]) for i in range(spectral_contrast.shape[0])})
+        features.update({f'tonnetz_{i+1}_mean': np.mean(tonnetz[i]) for i in range(tonnetz.shape[0])})
+        features.update({f'tonnetz_{i+1}_std': np.std(tonnetz[i]) for i in range(tonnetz.shape[0])})
+        # -------------------------------------------
         
         for i in range(n_mfcc):
             features[f'mfcc_{i+1}_mean'] = np.mean(mfccs[i])
@@ -48,40 +59,16 @@ def extract_features(file_path, n_mfcc=13):
         return None
 
 def estimate_tempo_simple(y, sr):
-    """
-    Simple tempo estimation that's less likely to crash.
-    Uses spectral flux for basic tempo estimation.
-    """
+    """Simple tempo estimation that's less likely to crash."""
     try:
-        # Use a simpler approach - spectral flux peaks
-        hop_length = 512
-        frame_length = 2048
-        
-        # Compute spectral flux
-        stft = np.abs(librosa.stft(y, hop_length=hop_length, n_fft=frame_length))
-        spectral_flux = np.sum(np.diff(stft, axis=1)**2, axis=0)
-        
-        # Find peaks in spectral flux
-        peaks = librosa.util.peak_pick(spectral_flux, pre_max=3, post_max=3, 
-                                     pre_avg=3, post_avg=5, delta=0.5, wait=10)
-        
-        if len(peaks) > 1:
-            # Calculate average time between peaks
-            peak_times = librosa.frames_to_time(peaks, sr=sr, hop_length=hop_length)
-            intervals = np.diff(peak_times)
-            if len(intervals) > 0:
-                avg_interval = np.mean(intervals)
-                tempo = 60.0 / avg_interval if avg_interval > 0 else 120.0
-                return min(max(tempo, 60.0), 240.0)  # Constrain to reasonable range
-        
-        return 120.0  # Default tempo
-        
-    except Exception as e:
-        print(f"Simple tempo estimation failed: {e}")
-        return 120.0  # Fallback tempo
+        onset_env = librosa.onset.onset_detect(y=y, sr=sr)
+        tempo = librosa.beat.tempo(onset_envelope=onset_env, sr=sr)
+        return tempo[0] if isinstance(tempo, np.ndarray) else tempo
+    except Exception:
+        return 120.0
 
 def load_and_extract(base_path, n_mfcc=13):
-    """Loads audio files and extracts features sequentially (more stable)."""
+    """Loads audio files and extracts features sequentially."""
     print("Finding all .wav files...")
     all_file_paths = [os.path.join(root, file) for root, _, files in os.walk(base_path) for file in files if file.endswith('.wav')]
     if not all_file_paths:
@@ -91,6 +78,7 @@ def load_and_extract(base_path, n_mfcc=13):
     
     features_list = []
     labels_list = []
+    groups_list = [] # For speaker groups
     
     emotions = {'01': 'neutral', '02': 'calm', '03': 'happy', '04': 'sad',
                 '05': 'angry', '06': 'fearful', '07': 'disgust', '08': 'surprised'}
@@ -99,14 +87,16 @@ def load_and_extract(base_path, n_mfcc=13):
         try:
             filename = os.path.basename(file_path)
             parts = filename.split('-')
-            if len(parts) >= 3:
+            if len(parts) >= 7:
                 emotion_code = parts[2]
+                speaker_id = int(parts[6].split('.')[0]) # Extract speaker ID
                 emotion = emotions.get(emotion_code)
                 if emotion:
                     features = extract_features(file_path, n_mfcc)
                     if features:
                         features_list.append(features)
                         labels_list.append(emotion)
+                        groups_list.append(speaker_id) # Add speaker ID to groups list
         except Exception as e:
             print(f"Failed to process {filename}: {e}")
             continue
@@ -114,4 +104,4 @@ def load_and_extract(base_path, n_mfcc=13):
     if not features_list:
         raise ValueError("Feature extraction failed for all files.")
         
-    return pd.DataFrame(features_list), pd.Series(labels_list, name="emotion")
+    return pd.DataFrame(features_list), pd.Series(labels_list, name="emotion"), pd.Series(groups_list, name="speaker")

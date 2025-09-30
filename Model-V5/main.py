@@ -5,10 +5,11 @@ import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split, GroupKFold
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 # --- Importing from our custom modules ---
 from feature_extraction import load_and_extract
-from preprocessing import preprocess_data
 from svm_model_training import train_svm
 from lr_model_training import train_logistic_regression
 from evaluation import analyze_feature_importance
@@ -17,15 +18,15 @@ from evaluation import analyze_feature_importance
 warnings.filterwarnings('ignore')
 RANDOM_STATE = 42
 np.random.seed(RANDOM_STATE)
-N_MFCC = 13  # Number of MFCCs to extract
+N_MFCC = 13
 
 # --- File Path Configuration ---
-DATA_DIR = "archive-16khz"  # Use a relative path
-OUTPUT_DIR = "Model-V2-output"
+DATA_DIR = "archive-16khz-v2" # UPDATED PATH
+OUTPUT_DIR = "Model-V5-output" # New output folder for new results
 
 # --- Utility Functions ---
 def save_artifact(data, filename, output_dir, description=""):
-    """Helper function to save data (DataFrame, model, etc.) with a timestamp."""
+    """Helper function to save data with a timestamp."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filepath = os.path.join(output_dir, f"{timestamp}_{filename}")
     
@@ -44,9 +45,8 @@ def save_artifact(data, filename, output_dir, description=""):
 # --- Predictor Class for Deployment ---
 class EmotionPredictor:
     """A class to encapsulate the trained pipeline for easy prediction."""
-    def __init__(self, model, scaler, label_encoder, feature_names):
-        self.model = model
-        self.scaler = scaler
+    def __init__(self, model_pipeline, label_encoder, feature_names):
+        self.pipeline = model_pipeline
         self.label_encoder = label_encoder
         self.feature_names = feature_names
 
@@ -58,10 +58,11 @@ class EmotionPredictor:
         if features_dict is None:
             return {"error": "Could not extract features from the audio file."}
         
-        feature_vector = [features_dict.get(name, 0) for name in self.feature_names]
-        scaled_features = self.scaler.transform([feature_vector])
-        prediction_encoded = self.model.predict(scaled_features)
-        prediction_proba = self.model.predict_proba(scaled_features)
+        # Create a DataFrame with the correct column order
+        feature_df = pd.DataFrame([features_dict], columns=self.feature_names)
+        
+        prediction_encoded = self.pipeline.predict(feature_df)
+        prediction_proba = self.pipeline.predict_proba(feature_df)
         
         predicted_emotion = self.label_encoder.inverse_transform(prediction_encoded)[0]
         confidence = {emotion: prob for emotion, prob in zip(self.label_encoder.classes_, prediction_proba[0])}
@@ -76,21 +77,37 @@ def main():
     print(f"Data directory: {DATA_DIR}")
 
     try:
-        # 1. Data Loading and Feature Extraction
+        # 1. Data Loading and Feature Extraction (Now includes speaker groups)
         print("STEP 1: Loading data and extracting features")
-        features_df, labels_series = load_and_extract(DATA_DIR, n_mfcc=N_MFCC)
-        save_artifact(features_df.join(labels_series), "01_raw_features_and_labels.csv", OUTPUT_DIR, "raw extracted features")
+        features_df, labels_series, groups_series = load_and_extract(DATA_DIR, n_mfcc=N_MFCC)
+        save_artifact(features_df.join([labels_series, groups_series]), "01_raw_features_and_labels.csv", OUTPUT_DIR, "raw extracted features")
 
-        # 2. Preprocessing
+        # 2. Preprocessing (Now handles groups)
         print("\nSTEP 2: Preprocessing data")
-        processed_data = preprocess_data(features_df, labels_series, OUTPUT_DIR, RANDOM_STATE, save_artifact)
-        X_train, X_test, y_train, y_test = processed_data['X_train'], processed_data['X_test'], processed_data['y_train'], processed_data['y_test']
-        scaler, le, feature_names = processed_data['scaler'], processed_data['label_encoder'], processed_data['feature_names']
+        
+        # Encode labels
+        le = LabelEncoder()
+        y_encoded = le.fit_transform(labels_series)
+        label_mapping = pd.DataFrame({'emotion': le.classes_, 'encoded_label': range(len(le.classes_))})
+        save_artifact(label_mapping, "02_label_mapping.csv", OUTPUT_DIR, "label encoding map")
 
-        # 3. Model Training
+        # Split data (stratified by emotion and grouped by speaker)
+        # We will perform scaling inside the pipeline, so we pass unscaled data
+        X_train, X_test, y_train, y_test, groups_train, _ = train_test_split(
+            features_df, y_encoded, groups_series, test_size=0.2, random_state=RANDOM_STATE, stratify=y_encoded
+        )
+        print(f"Data split: {len(X_train)} training samples, {len(X_test)} testing samples.")
+        
+        # Define the speaker-independent cross-validation strategy
+        group_kfold = GroupKFold(n_splits=5)
+        cv_strategy = list(group_kfold.split(X_train, y_train, groups_train))
+
+        feature_names = features_df.columns.tolist()
+
+        # 3. Model Training (Pass the CV strategy)
         print("\nSTEP 3: Training and evaluating models")
-        svm_model, svm_metrics = train_svm(X_train, y_train, X_test, y_test, le, OUTPUT_DIR, RANDOM_STATE, save_artifact)
-        lr_model, lr_metrics = train_logistic_regression(X_train, y_train, X_test, y_test, le, OUTPUT_DIR, RANDOM_STATE, save_artifact)
+        svm_model, svm_metrics = train_svm(X_train, y_train, X_test, y_test, le, OUTPUT_DIR, RANDOM_STATE, save_artifact, cv_strategy)
+        lr_model, lr_metrics = train_logistic_regression(X_train, y_train, X_test, y_test, le, OUTPUT_DIR, RANDOM_STATE, save_artifact, cv_strategy)
 
         # 4. Analysis and Comparison
         print("\nSTEP 4: Analyzing feature importance and comparing models")
@@ -105,10 +122,11 @@ def main():
         # 5. Finalize and Save Best Model Pipeline
         print("\nSTEP 5: Finalizing and saving best model")
         best_model_name = comparison_df['accuracy'].idxmax()
-        best_model = svm_model if best_model_name == "SVM" else lr_model
+        best_model_pipeline = svm_model if best_model_name == "SVM" else lr_model
         print(f"\nBest performing model is: {best_model_name} with accuracy {comparison_df.loc[best_model_name, 'accuracy']:.4f}")
 
-        predictor = EmotionPredictor(model=best_model, scaler=scaler, label_encoder=le, feature_names=feature_names)
+        # The predictor now saves the entire pipeline
+        predictor = EmotionPredictor(model_pipeline=best_model_pipeline, label_encoder=le, feature_names=feature_names)
         save_artifact(predictor, "05_emotion_predictor.pkl", OUTPUT_DIR, "Final predictor object")
 
         print("\nPIPELINE COMPLETED SUCCESSFULLY!")
