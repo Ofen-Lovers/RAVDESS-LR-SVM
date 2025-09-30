@@ -12,7 +12,7 @@ def train_svm(X_train, y_train, X_test, y_test, label_encoder, output_dir, rando
         'random_state': [random_state]
     }
     
-    svm = SVC()
+    svm = SVC(probability=True, class_weight='balanced') 
     
     svm_model, svm_metrics = train_and_evaluate_model(
         model=svm,

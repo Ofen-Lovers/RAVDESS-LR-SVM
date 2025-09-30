@@ -11,7 +11,7 @@ def train_logistic_regression(X_train, y_train, X_test, y_test, label_encoder, o
         'random_state': [random_state]
     }
     
-    lr = LogisticRegression()
+    lr = LogisticRegression(max_iter=1000, class_weight='balanced')
     
     lr_model, lr_metrics = train_and_evaluate_model(
         model=lr,
