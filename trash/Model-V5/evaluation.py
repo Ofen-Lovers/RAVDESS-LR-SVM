@@ -63,45 +63,66 @@ def train_and_evaluate_model(model, param_grid, X_train, y_train, X_test, y_test
     return best_model, metrics
 
 def analyze_feature_importance(model_pipeline, X_test, y_test, feature_names, model_name, output_dir, random_state, save_artifact_func):
-    """Analyzes and plots feature importance for a given model pipeline."""
+    """Fixed feature importance analysis that handles pipelines correctly."""
     print(f"\nAnalyzing feature importance for {model_name}...")
     model_prefix = model_name.lower().replace(' ', '_')
     
-    # Get selected features from the pipeline
-    selector = model_pipeline.named_steps['selector']
-    selected_mask = selector.get_support()
-    selected_features = np.array(feature_names)[selected_mask]
-    
-    # Get the final model from the pipeline
-    final_model = model_pipeline.named_steps['model']
-    
-    if isinstance(final_model, SVC) and final_model.kernel == 'linear':
-        importance = np.abs(final_model.coef_).mean(axis=0)
-        importance_type = "Coefficient-based"
-    else:
+    try:
+        # Get selected features from the pipeline
+        selector = model_pipeline.named_steps['selector']
+        selected_mask = selector.get_support()
+        selected_features = np.array(feature_names)[selected_mask]
+        
+        # Get the final model from the pipeline
+        final_model = model_pipeline.named_steps['model']
+        
+        # Use permutation importance for all models - more reliable
         print("Using permutation importance (model-agnostic method)...")
         importance_type = "Permutation-based"
-        # We need to run permutation on the full pipeline
-        result = permutation_importance(model_pipeline, X_test, y_test, n_repeats=10, random_state=random_state, n_jobs=-1)
         
-        # Map importance back to original features
-        full_importance = result.importances_mean
-        feat_imp_df = pd.DataFrame({'feature': feature_names, 'importance': full_importance}).sort_values('importance', ascending=False)
-        save_artifact_func(feat_imp_df, f"04_{model_prefix}_feature_importance.csv", output_dir, f"{model_name} feature importance")
+        result = permutation_importance(
+            model_pipeline, X_test, y_test, 
+            n_repeats=10, 
+            random_state=random_state, 
+            n_jobs=-1
+        )
         
+        # Create importance dataframe
+        feat_imp_df = pd.DataFrame({
+            'feature': feature_names, 
+            'importance': result.importances_mean,
+            'importance_std': result.importances_std
+        }).sort_values('importance', ascending=False)
+        
+        save_artifact_func(
+            feat_imp_df, 
+            f"04_{model_prefix}_feature_importance.csv", 
+            output_dir, 
+            f"{model_name} feature importance"
+        )
+        
+        # Plot top 20 features
         fig = plt.figure(figsize=(12, 8))
-        sns.barplot(x='importance', y='feature', data=feat_imp_df.head(20))
+        top_features = feat_imp_df.head(20)
+        
+        plt.barh(range(len(top_features)), top_features['importance'])
+        plt.yticks(range(len(top_features)), top_features['feature'])
+        plt.xlabel('Feature Importance')
         plt.title(f'Top 20 Feature Importance ({importance_type}) - {model_name}')
+        plt.gca().invert_yaxis()  # Most important at top
         plt.tight_layout()
-        save_artifact_func(fig, f"04_{model_prefix}_feature_importance.png", output_dir)
-        return # Exit after saving permutation importance
-
-    # This part runs only for linear SVM
-    feat_imp_df = pd.DataFrame({'feature': selected_features, 'importance': importance}).sort_values('importance', ascending=False)
-    save_artifact_func(feat_imp_df, f"04_{model_prefix}_feature_importance.csv", output_dir, f"{model_name} feature importance")
-    
-    fig = plt.figure(figsize=(12, 8))
-    sns.barplot(x='importance', y='feature', data=feat_imp_df.head(20))
-    plt.title(f'Top 20 Feature Importance ({importance_type}) - {model_name}')
-    plt.tight_layout()
-    save_artifact_func(fig, f"04_{model_prefix}_feature_importance.png", output_dir)
+        
+        save_artifact_func(
+            fig, 
+            f"04_{model_prefix}_feature_importance.png", 
+            output_dir
+        )
+        
+        print(f"Top 5 features for {model_name}:")
+        for i, row in feat_imp_df.head().iterrows():
+            print(f"  {row['feature']}: {row['importance']:.4f}")
+            
+    except Exception as e:
+        print(f"Error in feature importance analysis for {model_name}: {e}")
+        import traceback
+        traceback.print_exc()
